@@ -1,0 +1,85 @@
+{
+  "name": "antigravity-account-switcher",
+  "displayName": "Antigravity Multi-Account Switcher",
+  "description": "Switch between multiple Antigravity Google accounts without manually logging in again.",
+  "version": "2.0.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "antigravity",
+    "accounts",
+    "profiles",
+    "switcher",
+    "rate-limit"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:antigravityAccountSwitcher.saveCurrentProfile",
+    "onCommand:antigravityAccountSwitcher.switchProfile",
+    "onCommand:antigravityAccountSwitcher.switchProfileSlot",
+    "onCommand:antigravityAccountSwitcher.deleteProfile",
+    "onCommand:antigravityAccountSwitcher.listProfiles"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "antigravityAccountSwitcher.saveCurrentProfile",
+        "title": "Antigravity: Save Current Profile"
+      },
+      {
+        "command": "antigravityAccountSwitcher.switchProfile",
+        "title": "Antigravity: Switch Profile"
+      },
+      {
+        "command": "antigravityAccountSwitcher.switchProfileSlot",
+        "title": "Antigravity: Switch Profile Slot"
+      },
+      {
+        "command": "antigravityAccountSwitcher.deleteProfile",
+        "title": "Antigravity: Delete Profile"
+      },
+      {
+        "command": "antigravityAccountSwitcher.listProfiles",
+        "title": "Antigravity: List Profiles"
+      }
+    ],
+    "configuration": {
+      "title": "Antigravity Account Switcher",
+      "properties": {
+        "antigravityAccountSwitcher.maxProfiles": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Maximum number of profile slots shown in the status bar."
+        },
+        "antigravityAccountSwitcher.rateLimitMonitor.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic rate limit detection from Antigravity log files."
+        },
+        "antigravityAccountSwitcher.rateLimitMonitor.scanIntervalSeconds": {
+          "type": "number",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 300,
+          "description": "How often Antigravity logs are scanned for rate limit messages."
+        },
+        "antigravityAccountSwitcher.rateLimitMonitor.cooldownSeconds": {
+          "type": "number",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 600,
+          "description": "Minimum delay between repeated rate limit alerts."
+        }
+      }
+    }
+  }
+}
