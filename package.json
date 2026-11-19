@@ -1,7 +1,7 @@
 {
   "name": "antigravity-account-switcher",
   "displayName": "Antigravity Multi-Account Switcher",
-  "description": "Switch between multiple Antigravity Google accounts without manually logging in again.",
+  "description": "Locally save and restore Antigravity profiles with explicit session-data safeguards.",
   "version": "2.0.0",
   "publisher": "local",
   "license": "MIT",
@@ -16,7 +16,7 @@
     "accounts",
     "profiles",
     "switcher",
-    "rate-limit"
+    "local-first"
   ],
   "main": "./extension.js",
   "activationEvents": [
@@ -60,25 +60,6 @@
           "maximum": 5,
           "description": "Maximum number of profile slots shown in the status bar."
         },
-        "antigravityAccountSwitcher.rateLimitMonitor.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable automatic rate limit detection from Antigravity log files."
-        },
-        "antigravityAccountSwitcher.rateLimitMonitor.scanIntervalSeconds": {
-          "type": "number",
-          "default": 15,
-          "minimum": 5,
-          "maximum": 300,
-          "description": "How often Antigravity logs are scanned for rate limit messages."
-        },
-        "antigravityAccountSwitcher.rateLimitMonitor.cooldownSeconds": {
-          "type": "number",
-          "default": 60,
-          "minimum": 10,
-          "maximum": 600,
-          "description": "Minimum delay between repeated rate limit alerts."
-        }
       }
     }
   }

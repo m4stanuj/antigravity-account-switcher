@@ -8,6 +8,7 @@ param(
     [string]$ProfilesRoot,
 
     [Parameter(Mandatory = $true)]
+    [ValidateRange(1, 5)]
     [int]$Slot,
 
     [string]$ProfileName
@@ -210,15 +211,46 @@ try {
                 throw "Profile slot $Slot was not found."
             }
 
-            foreach ($appRoot in Get-AppRoots) {
-                if (-not (Test-Path -LiteralPath $appRoot.Path)) {
-                    New-Item -ItemType Directory -Path $appRoot.Path -Force | Out-Null
+            $rollbackRoot = Join-Path $ProfilesRoot ("rollback-" + [guid]::NewGuid().ToString("N"))
+            New-Item -ItemType Directory -Path $rollbackRoot -Force | Out-Null
+
+            try {
+                foreach ($appRoot in Get-AppRoots) {
+                    if (-not (Test-Path -LiteralPath $appRoot.Path)) {
+                        New-Item -ItemType Directory -Path $appRoot.Path -Force | Out-Null
+                    }
+
+                    $source = Join-Path $profileRoot $appRoot.Name
+                    if (-not (Test-Path -LiteralPath $source)) {
+                        continue
+                    }
+
+                    $backup = Join-Path $rollbackRoot $appRoot.Name
+                    New-Item -ItemType Directory -Path $backup -Force | Out-Null
+                    Copy-TrackedContent -SourceRoot $appRoot.Path -DestinationRoot $backup
+
+                    Clear-TrackedContent -Root $appRoot.Path
+                    Copy-TrackedContent -SourceRoot $source -DestinationRoot $appRoot.Path
+                }
+            }
+            catch {
+                foreach ($appRoot in Get-AppRoots) {
+                    if (-not (Test-Path -LiteralPath $appRoot.Path)) {
+                        New-Item -ItemType Directory -Path $appRoot.Path -Force | Out-Null
+                    }
+
+                    Clear-TrackedContent -Root $appRoot.Path
+                    $backup = Join-Path $rollbackRoot $appRoot.Name
+                    if (Test-Path -LiteralPath $backup) {
+                        Copy-TrackedContent -SourceRoot $backup -DestinationRoot $appRoot.Path
+                    }
                 }
 
-                Clear-TrackedContent -Root $appRoot.Path
-                $source = Join-Path $profileRoot $appRoot.Name
-                if (Test-Path -LiteralPath $source) {
-                    Copy-TrackedContent -SourceRoot $source -DestinationRoot $appRoot.Path
+                throw
+            }
+            finally {
+                if (Test-Path -LiteralPath $rollbackRoot) {
+                    Remove-Item -LiteralPath $rollbackRoot -Recurse -Force -ErrorAction SilentlyContinue
                 }
             }
 

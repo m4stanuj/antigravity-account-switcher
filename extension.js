@@ -6,17 +6,6 @@ const cp = require("child_process");
 
 const PROFILE_COLORS = ["#4A90E2", "#28A745", "#F39C12", "#8E44AD", "#E84393"];
 const MAX_PROFILES = 5;
-const RATE_LIMIT_PATTERNS = [
-  /rate limit/i,
-  /too many requests/i,
-  /\b429\b/,
-  /quota exceeded/i,
-  /resource exhausted/i,
-  /anthropic.*rate/i,
-  /claude.*rate/i,
-  /gemini.*rate/i,
-  /usage limit/i
-];
 
 function getProfilesRoot() {
   const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
@@ -148,134 +137,6 @@ async function runProfileManager(action, payload) {
   }
 }
 
-class RateLimitMonitor {
-  constructor(context, onDetect) {
-    this.context = context;
-    this.onDetect = onDetect;
-    this.interval = undefined;
-    this.lastAlertAt = 0;
-    this.lastMatchSignature = "";
-    this.fileOffsets = new Map();
-  }
-
-  start() {
-    this.stop();
-    const config = vscode.workspace.getConfiguration("antigravityAccountSwitcher");
-    if (!config.get("rateLimitMonitor.enabled", true)) {
-      return;
-    }
-    const seconds = config.get("rateLimitMonitor.scanIntervalSeconds", 15);
-    this.interval = setInterval(() => {
-      this.scan().catch(() => {});
-    }, seconds * 1000);
-    this.scan().catch(() => {});
-  }
-
-  stop() {
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = undefined;
-    }
-  }
-
-  getLogDirectories() {
-    const dirs = [];
-    const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
-    dirs.push(path.join(appData, "Antigravity", "logs"));
-    dirs.push(path.join(localAppData, "Antigravity", "logs"));
-    dirs.push(path.join(os.homedir(), ".antigravity", "logs"));
-    return dirs.filter((dir, index, all) => all.indexOf(dir) === index && fs.existsSync(dir));
-  }
-
-  collectLogFiles(root, bucket) {
-    const entries = fs.readdirSync(root, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(root, entry.name);
-      if (entry.isDirectory()) {
-        this.collectLogFiles(fullPath, bucket);
-        continue;
-      }
-      if (/\.(log|txt)$/i.test(entry.name)) {
-        bucket.push(fullPath);
-      }
-    }
-  }
-
-  async scan() {
-    const files = [];
-    for (const dir of this.getLogDirectories()) {
-      this.collectLogFiles(dir, files);
-    }
-
-    if (!files.length) {
-      return;
-    }
-
-    const ordered = files
-      .map((file) => ({ file, stat: fs.statSync(file) }))
-      .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
-      .slice(0, 25);
-
-    for (const entry of ordered) {
-      const detected = this.scanFile(entry.file, entry.stat);
-      if (detected) {
-        await this.raiseAlert(detected);
-        return;
-      }
-    }
-  }
-
-  scanFile(filePath, stat) {
-    const previousOffset = this.fileOffsets.get(filePath) || 0;
-    const nextOffset = Math.max(0, stat.size - 64 * 1024);
-    const start = previousOffset > 0 && previousOffset <= stat.size ? previousOffset : nextOffset;
-
-    const fd = fs.openSync(filePath, "r");
-    try {
-      const length = stat.size - start;
-      if (length <= 0) {
-        this.fileOffsets.set(filePath, stat.size);
-        return null;
-      }
-      const buffer = Buffer.alloc(length);
-      fs.readSync(fd, buffer, 0, length, start);
-      this.fileOffsets.set(filePath, stat.size);
-
-      const text = buffer.toString("utf8");
-      const lines = text.split(/\r?\n/).slice(-300);
-      for (const line of lines) {
-        if (RATE_LIMIT_PATTERNS.some((pattern) => pattern.test(line))) {
-          return {
-            filePath,
-            line: line.trim(),
-            signature: `${filePath}:${stat.mtimeMs}:${line.trim()}`
-          };
-        }
-      }
-      return null;
-    } finally {
-      fs.closeSync(fd);
-    }
-  }
-
-  async raiseAlert(match) {
-    const now = Date.now();
-    const cooldownSeconds = vscode.workspace
-      .getConfiguration("antigravityAccountSwitcher")
-      .get("rateLimitMonitor.cooldownSeconds", 60);
-    if (match.signature === this.lastMatchSignature && now - this.lastAlertAt < cooldownSeconds * 1000) {
-      return;
-    }
-    if (now - this.lastAlertAt < cooldownSeconds * 1000) {
-      return;
-    }
-    this.lastAlertAt = now;
-    this.lastMatchSignature = match.signature;
-    await this.onDetect(match);
-  }
-}
-
 class ExtensionController {
   constructor(context) {
     this.context = context;
@@ -285,22 +146,12 @@ class ExtensionController {
     );
     this.metadata = loadMetadata(this.maxProfiles);
     this.profileItems = [];
-    this.rateLimitMonitor = new RateLimitMonitor(context, async (match) => {
-      await this.handleRateLimit(match);
-    });
   }
 
   initialize() {
     this.registerCommands();
     this.createStatusBarItems();
     this.refreshStatusBar();
-    this.rateLimitMonitor.start();
-
-    this.context.subscriptions.push({
-      dispose: () => {
-        this.rateLimitMonitor.stop();
-      }
-    });
 
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((event) => {
@@ -314,7 +165,6 @@ class ExtensionController {
           this.disposeStatusBarItems();
           this.createStatusBarItems();
           this.refreshStatusBar();
-          this.rateLimitMonitor.start();
         }
       })
     );
@@ -438,6 +288,16 @@ class ExtensionController {
     const profileName = sanitizeName(entered);
     const folder = `slot-${targetSlot}-${slugify(profileName)}`;
 
+    const saveAction = "Save profile";
+    const consent = await vscode.window.showWarningMessage(
+      "Saved profiles can include authentication and session data. Save them only on an encrypted computer you control and never share the profile directory.",
+      { modal: true },
+      saveAction
+    );
+    if (consent !== saveAction) {
+      return;
+    }
+
     try {
       await vscode.window.withProgress(
         {
@@ -506,6 +366,16 @@ class ExtensionController {
       return;
     }
 
+    const switchAction = "Switch profile";
+    const consent = await vscode.window.showWarningMessage(
+      `Switching replaces Antigravity's local session data with the saved profile "${profile.name}" and reloads the window. Save your work first.`,
+      { modal: true },
+      switchAction
+    );
+    if (consent !== switchAction) {
+      return;
+    }
+
     try {
       await vscode.window.withProgress(
         {
@@ -550,6 +420,16 @@ class ExtensionController {
       return;
     }
 
+    const deleteAction = "Delete profile";
+    const consent = await vscode.window.showWarningMessage(
+      `Delete the saved profile "${picked.label}"? This permanently removes its local session data.`,
+      { modal: true },
+      deleteAction
+    );
+    if (consent !== deleteAction) {
+      return;
+    }
+
     try {
       const result = await runProfileManager("delete", { slot: picked.slot });
       if (!result.success) {
@@ -589,22 +469,6 @@ class ExtensionController {
     await vscode.window.showTextDocument(document, { preview: false });
   }
 
-  async handleRateLimit(match) {
-    const profiles = this.metadata.slots.filter((slot) => slot.name);
-    if (profiles.length < 2) {
-      return;
-    }
-
-    const switchNow = "Switch Profile";
-    const action = await vscode.window.showWarningMessage(
-      `Rate limit detected in Antigravity logs. Switch to another saved account?`,
-      switchNow
-    );
-
-    if (action === switchNow) {
-      await this.switchProfileFromPicker();
-    }
-  }
 }
 
 function activate(context) {

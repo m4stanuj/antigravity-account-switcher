@@ -6,9 +6,9 @@
 [![GitHub release](https://img.shields.io/github/v/release/m4stanuj/antigravity-account-switcher?style=flat-square&color=00FF9D)](https://github.com/m4stanuj/antigravity-account-switcher/releases)
 [![GitHub stars](https://img.shields.io/github/stars/m4stanuj/antigravity-account-switcher?style=flat-square)](https://github.com/m4stanuj/antigravity-account-switcher/stargazers)
 
-> **Seamlessly switch between multiple Google accounts in Antigravity to bypass model rate limits without manual re-login.**
+> **Locally save and restore Antigravity profiles with explicit safeguards for authentication and session data.**
 
-When you're power-using Antigravity and hit Gemini/Claude rate limits, manually logging out and back in wastes 2-3 minutes each time. This extension makes it **one click**.
+This extension is a local profile-management utility. It is not a mechanism for bypassing provider limits, account restrictions, or terms of service. Use only accounts and software sessions you are authorized to access, and follow your provider's usage policies.
 
 ---
 
@@ -16,7 +16,7 @@ When you're power-using Antigravity and hit Gemini/Claude rate limits, manually 
 
 ### 🎨 Colorful Profile Buttons
 - **5 profile slots** in the status bar with distinct colors: Blue, Green, Orange, Purple, Pink
-- One-click switching with no confirmation dialog
+- Explicit confirmation before saving, switching, or deleting a profile
 - Empty slots are grayed out with slot numbers
 
 ### 💾 Easy Profile Management
@@ -24,11 +24,10 @@ When you're power-using Antigravity and hit Gemini/Claude rate limits, manually 
 - `Delete` button removes unwanted profiles
 - Profiles are stored in `%APPDATA%\Antigravity\Profiles`
 
-### 🛡️ Rate Limit Detection
-- Automatically scans Antigravity log files for rate limit errors
-- Supports Gemini- and Claude-style rate limit messages
-- 1-minute cooldown between alerts to avoid spam
-- **Auto-switch suggestion** when rate limit is detected
+### 🛡️ Session Safety
+- Explains that saved profiles may contain authentication/session data
+- Requires an explicit user confirmation before local session data is replaced
+- Creates a temporary rollback copy during profile switching and restores it if the operation fails
 
 ---
 
@@ -59,29 +58,18 @@ When you're power-using Antigravity and hit Gemini/Claude rate limits, manually 
 
 ---
 
-## 🏆 Battle-Tested
-
-> This extension was born out of pure frustration. During a 3-hour revenue sprint, I hit Gemini rate limits **7 times** and wasted 20+ minutes just re-authenticating. The first version was hacked together in 45 minutes and has been running daily since.
-
-### Usage Stats
-| Metric | Value |
-|--------|-------|
-| Daily profile switches | 15-20 avg |
-| Time saved per switch | ~2.5 min |
-| Total time saved (est.) | 30+ hours |
-| Rate limit detections | 100% accurate |
-| Profiles managed | 5 concurrent |
-
-> *"Went from rage-quitting rate limits to barely noticing them. Essential if you're pushing Antigravity hard."*
-
----
-
 ## 📝 Notes
 
 - Profile switching reloads Antigravity so the restored authentication state takes effect
-- Each profile stores Electron and VS Code session storage locations used by Antigravity
+- Each profile can include Electron and VS Code session storage locations used by Antigravity
 - Maximum 5 profiles supported
 - Works with Antigravity, VS Code, and any Electron-based IDE
+- Use a device with full-disk encryption, never share the profile directory, and delete profiles you no longer need
+- This project is intended for authorized local profile management only; it must not be used to evade quotas, restrictions, or account controls
+
+## 🔐 Security
+
+Please read [SECURITY.md](SECURITY.md) before using or reporting a vulnerability. The extension deliberately asks for confirmation before any operation that saves, replaces, or deletes local session data.
 
 ---
 
