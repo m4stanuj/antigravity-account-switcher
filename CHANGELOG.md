@@ -2,6 +2,11 @@
 
 All notable changes to the Antigravity Multi-Account Switcher are documented here.
 
+## [3.0.0] — Unreleased
+
+- Retired session saving, switching, and deletion, including direct PowerShell invocation.
+- Kept the legacy profile inventory as a read-only command.
+
 ## [2.0.0] — 2026-03-28
 
 ### Added

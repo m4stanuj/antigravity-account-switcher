@@ -1,8 +1,8 @@
 {
   "name": "antigravity-account-switcher",
-  "displayName": "Antigravity Multi-Account Switcher",
-  "description": "Locally save and restore Antigravity profiles with explicit session-data safeguards.",
-  "version": "2.0.0",
+  "displayName": "Antigravity Legacy Profile Inventory",
+  "description": "View a read-only inventory of profiles recorded by the retired Antigravity account switcher.",
+  "version": "3.0.0",
   "publisher": "local",
   "license": "MIT",
   "engines": {
@@ -13,54 +13,19 @@
   ],
   "keywords": [
     "antigravity",
-    "accounts",
     "profiles",
-    "switcher",
-    "local-first"
+    "read-only"
   ],
   "main": "./extension.js",
-  "activationEvents": [
-    "onStartupFinished",
-    "onCommand:antigravityAccountSwitcher.saveCurrentProfile",
-    "onCommand:antigravityAccountSwitcher.switchProfile",
-    "onCommand:antigravityAccountSwitcher.switchProfileSlot",
-    "onCommand:antigravityAccountSwitcher.deleteProfile",
-    "onCommand:antigravityAccountSwitcher.listProfiles"
-  ],
+  "scripts": {
+    "test": "node --test"
+  },
   "contributes": {
     "commands": [
       {
-        "command": "antigravityAccountSwitcher.saveCurrentProfile",
-        "title": "Antigravity: Save Current Profile"
-      },
-      {
-        "command": "antigravityAccountSwitcher.switchProfile",
-        "title": "Antigravity: Switch Profile"
-      },
-      {
-        "command": "antigravityAccountSwitcher.switchProfileSlot",
-        "title": "Antigravity: Switch Profile Slot"
-      },
-      {
-        "command": "antigravityAccountSwitcher.deleteProfile",
-        "title": "Antigravity: Delete Profile"
-      },
-      {
         "command": "antigravityAccountSwitcher.listProfiles",
-        "title": "Antigravity: List Profiles"
+        "title": "Antigravity: List Legacy Profiles"
       }
-    ],
-    "configuration": {
-      "title": "Antigravity Account Switcher",
-      "properties": {
-        "antigravityAccountSwitcher.maxProfiles": {
-          "type": "number",
-          "default": 5,
-          "minimum": 1,
-          "maximum": 5,
-          "description": "Maximum number of profile slots shown in the status bar."
-        },
-      }
-    }
+    ]
   }
 }

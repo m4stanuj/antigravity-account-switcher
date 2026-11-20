@@ -4,16 +4,11 @@
 
 Security fixes are applied to the current `main` branch.
 
-## Session-data safety
+## Legacy session data
 
-Saved profiles may include local authentication and session data. Treat the profile directory as sensitive:
+Older versions copied local authentication and session data into saved profile directories. Keep those directories private, out of shared or synced storage, and on a device with full-disk encryption.
 
-- use only a computer and account you control;
-- enable full-disk encryption;
-- do not copy, sync, or share profile folders; and
-- delete profiles that are no longer needed.
-
-The extension is for authorized local profile management. It must not be used to evade quotas, provider restrictions, or account controls.
+The current extension reads legacy profile metadata for inventory. Use Antigravity's built-in account controls to manage your sign-in.
 
 ## Reporting a vulnerability
 

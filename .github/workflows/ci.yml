@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,7 +18,9 @@ jobs:
           node-version: '22'
       - name: Validate extension syntax
         run: node --check extension.js
-      - name: Validate PowerShell syntax
+      - name: Test the read-only inventory
+        run: npm test
+      - name: Verify the retired PowerShell entry point
         shell: pwsh
         run: |
           $tokens = $null
@@ -32,3 +34,32 @@ jobs:
             $errors | ForEach-Object { Write-Error $_ }
             exit 1
           }
+
+          $scriptPath = (Resolve-Path 'scripts/profile_manager.ps1').Path
+          $isolatedRoot = Join-Path $env:RUNNER_TEMP ('legacy-profile-check-' + [guid]::NewGuid().ToString('N'))
+          $env:APPDATA = Join-Path $isolatedRoot 'roaming'
+          $env:LOCALAPPDATA = Join-Path $isolatedRoot 'local'
+          $env:USERPROFILE = Join-Path $isolatedRoot 'user'
+          $profilesRoot = Join-Path $isolatedRoot 'profiles'
+          $sessionRoots = @(
+            $profilesRoot
+            (Join-Path $env:APPDATA 'Antigravity')
+            (Join-Path $env:LOCALAPPDATA 'Antigravity')
+            (Join-Path $env:USERPROFILE '.antigravity')
+          )
+          foreach ($action in @('save', 'switch', 'delete')) {
+            $output = & pwsh -NoProfile -NonInteractive -File $scriptPath -Action $action -ProfilesRoot $profilesRoot -Slot 1 -ProfileName 'Retirement check'
+            if ($LASTEXITCODE -ne 1) {
+              throw "Expected the retired action '$action' to exit with status 1."
+            }
+            $result = $output | ConvertFrom-Json
+            if ($result.success -ne $false -or $result.message -ne 'Legacy Antigravity session operations have been retired.') {
+              throw "Expected a retirement response for '$action'."
+            }
+            foreach ($root in $sessionRoots) {
+              if (Test-Path -LiteralPath $root) {
+                throw "Retired action '$action' unexpectedly created a profile or session directory."
+              }
+            }
+          }
+          exit 0
