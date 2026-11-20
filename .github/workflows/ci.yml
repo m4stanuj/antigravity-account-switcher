@@ -2,20 +2,24 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/production-hardening-2026-11']
   pull_request:
     branches: [main]
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Validate extension syntax
         run: node --check extension.js
       - name: Test the read-only inventory
